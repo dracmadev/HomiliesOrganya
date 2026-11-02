@@ -105,34 +105,50 @@ namespace Assets.SimpleLocalization.Scripts
             return Dictionary.ContainsKey(Language) && Dictionary[Language].ContainsKey(localizationKey);
         }
 
-        /// <summary>
-        /// Get localized value by localization key.
-        /// </summary>
+        //Localize made by Alvaro Olivet i Gimeno
         public static string Localize(string localizationKey)
         {
+            // 1. Comprovem si la clau és null o buida de cop
+            if (string.IsNullOrEmpty(localizationKey))
+            {
+                return "...";
+            }
+
             if (Dictionary.Count == 0)
             {
                 Read();
             }
 
-            if (!Dictionary.ContainsKey(Language)) throw new KeyNotFoundException("Language not found: " + Language);
+            // 2. Validem que el llenguatge existeixi per evitar errors posteriors
+            if (string.IsNullOrEmpty(Language) || !Dictionary.ContainsKey(Language))
+            {
+                Debug.LogError($"Language not set or not found: {Language}");
+                return localizationKey; // Retornem la clau per no trencar l'UI
+            }
 
-            var missed = !Dictionary[Language].ContainsKey(localizationKey) || Dictionary[Language][localizationKey] == "";
+            // 3. Comprovem si la traducció existeix en l'idioma actual
+            bool hasTranslation = Dictionary[Language].ContainsKey(localizationKey) &&
+                                  !string.IsNullOrEmpty(Dictionary[Language][localizationKey]);
 
-            if (missed)
+            if (!hasTranslation)
             {
                 Debug.LogWarning($"Translation not found: {localizationKey} ({Language}).");
 
-                return Dictionary["English"].ContainsKey(localizationKey) ? Dictionary["English"][localizationKey] : localizationKey;
+                // Intentem fallback a l'anglès si la clau existeix
+                if (Dictionary.ContainsKey("English") && Dictionary["English"].ContainsKey(localizationKey))
+                {
+                    return Dictionary["English"][localizationKey];
+                }
+
+                return localizationKey; // Si no hi ha res, retornem el nom de la clau
             }
 
             return Dictionary[Language][localizationKey];
         }
-
-	    /// <summary>
-	    /// Get localized value by localization key.
-	    /// </summary>
-		public static string Localize(string localizationKey, params object[] args)
+        /// <summary>
+        /// Get localized value by localization key.
+        /// </summary>
+        public static string Localize(string localizationKey, params object[] args)
         {
             var pattern = Localize(localizationKey);
 
